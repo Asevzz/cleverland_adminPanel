@@ -4,7 +4,21 @@ sys.path.insert(0, '/mnt/agents/output/cleverland')
 from functools import wraps
 from flask import session, redirect, url_for, request
 from werkzeug.security import check_password_hash, generate_password_hash
-from bot.services.firebase_service import FirebaseService
+
+# Исправленный импорт
+try:
+    from bot.services.firebase_service import FirebaseService
+except ImportError:
+    # Альтернатива для Render
+    import firebase_admin
+    from firebase_admin import firestore
+    
+    class FirebaseService:
+        @staticmethod
+        def get_teacher(login):
+            db = firestore.client()
+            doc = db.collection('teachers').document(login).get()
+            return doc.to_dict() if doc.exists else None
 
 def login_required(f):
     @wraps(f)
