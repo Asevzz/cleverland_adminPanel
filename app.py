@@ -3,9 +3,12 @@ sys.path.insert(0, '/mnt/agents/output/cleverland')
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash
-from config import SECRET_KEY
-from web.auth import verify_teacher
-from web.routes import dashboard_bp, tests_bp, results_bp, keys_bp
+try:
+    from config import SECRET_KEY
+except ImportError:
+    from web.config import SECRET_KEY
+from auth import verify_teacher  # ← ИСПРАВЛЕНО
+from routes import dashboard_bp, tests_bp, results_bp, keys_bp  # ← ИСПРАВЛЕНО
 from bot.services.firebase_service import FirebaseService
 
 app = Flask(__name__, 
@@ -45,7 +48,7 @@ def logout():
 @app.route('/init-admin')
 def init_admin():
     """Инициализация администратора (выполнить один раз)"""
-    from web.config import ADMIN_USERNAME, ADMIN_PASSWORD
+    from config import ADMIN_USERNAME, ADMIN_PASSWORD  # ← ИСПРАВЛЕНО
     from werkzeug.security import generate_password_hash
 
     # Проверяем, есть ли уже админ
