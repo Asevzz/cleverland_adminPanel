@@ -3,7 +3,7 @@ sys.path.insert(0, '/mnt/agents/output/cleverland')
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash
-from web.config import SECRET_KEY
+from config import SECRET_KEY
 from web.auth import verify_teacher
 from web.routes import dashboard_bp, tests_bp, results_bp, keys_bp
 from bot.services.firebase_service import FirebaseService
