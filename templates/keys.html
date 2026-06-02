@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Ключи активации — CleverLand Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🔑 Ключи активации</h1>
+</div>
+
+<div class="keys-section">
+    <div class="create-key-form">
+        <h3>Создать новый ключ</h3>
+        <form method="POST" action="{{ url_for('keys.create_key') }}">
+            <div class="form-group">
+                <label for="subject_id">Предмет</label>
+                <select id="subject_id" name="subject_id" required>
+                    {% for subject_id in session.get('teacher_subjects', []) %}
+                    <option value="{{ subject_id }}">{{ subjects[subject_id].name if subjects else subject_id }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">➕ Создать ключ</button>
+        </form>
+    </div>
+
+    <div class="keys-list">
+        <h3>Существующие ключи</h3>
+        <table class="keys-table">
+            <thead>
+                <tr>
+                    <th>Ключ</th>
+                    <th>Предмет</th>
+                    <th>Статус</th>
+                    <th>Ученик (ФИО)</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for key in keys %}
+                <tr class="{% if key.is_used %}key-used{% else %}key-free{% endif %}">
+                    <td class="key-code">{{ key.code }}</td>
+                    <td>{{ subjects[key.subject_id].name if subjects and key.subject_id in subjects else key.subject_id }}</td>
+                    <td>
+                        <span class="status-badge {% if key.is_used %}badge-used{% else %}badge-free{% endif %}">
+                            {% if key.is_used %}🔴 Использован{% else %}🟢 Свободен{% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        {% if key.student_name %}
+                            <span class="student-name">👤 {{ key.student_name }}</span>
+                        {% elif key.student_tg_id %}
+                            <span class="student-id">ID: {{ key.student_tg_id }}</span>
+                        {% else %}
+                            <span class="no-student">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if key.is_used %}
+                        <form method="POST" action="{{ url_for('keys.unbind_key', key_code=key.code) }}" class="inline-form" onsubmit="return confirm('Отвязать ключ от ученика?')">
+                            <button type="submit" class="btn btn-small btn-warning">🔗 Отвязать</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="empty-cell">
+                        <div class="empty-state">
+                            <span class="empty-icon">🔑</span>
+                            <p>Ключей пока нет. Создайте первый!</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+.student-name {
+    color: #e0aaff;
+    font-weight: 500;
+}
+
+.student-id {
+    color: #c77dff;
+    font-size: 12px;
+}
+
+.no-student {
+    color: #666;
+}
+
+.empty-cell {
+    text-align: center;
+    padding: 40px;
+}
+
+.empty-state {
+    color: #c77dff;
+}
+
+.empty-icon {
+    font-size: 32px;
+    display: block;
+    margin-bottom: 10px;
+}
+</style>
+{% endblock %}

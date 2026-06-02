@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}{% if test %}Редактировать{% else %}Создать{% endif %} тест — CleverLand Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="header-left">
+        <a href="{{ url_for('tests.tests_list', subject_id=subject_id) }}" class="back-link">← Назад</a>
+        <h1>{% if test %}✏️ Редактировать тест{% else %}➕ Создать тест{% endif %}</h1>
+    </div>
+</div>
+
+<!-- ВАЖНО: enctype="multipart/form-data" для загрузки файлов -->
+<form method="POST" class="test-form" id="testForm" enctype="multipart/form-data">
+    <div class="form-section">
+        <div class="form-group">
+            <label for="title">Название теста</label>
+            <input type="text" id="title" name="title" value="{{ test.title if test else '' }}" required placeholder="Например: История Беларуси — Часть А #1">
+        </div>
+
+        <div class="form-group">
+            <label for="part">Часть</label>
+            <select id="part" name="part" required>
+                {% for part in subject.parts %}
+                <option value="{{ part }}" {% if test and test.part == part %}selected{% endif %}>Часть {{ part }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <h2>❓ Вопросы</h2>
+        <div id="questionsContainer">
+            {% if test %}
+                {% for question in test.questions %}
+                <div class="question-card" data-index="{{ loop.index0 }}">
+                    <div class="question-header">
+                        <h4>Вопрос {{ loop.index }}</h4>
+                        <button type="button" class="btn btn-small btn-danger" onclick="removeQuestion(this)">🗑️</button>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Текст вопроса</label>
+                        <textarea name="question_{{ loop.index0 }}_text" rows="3" required>{{ question.text }}</textarea>
+                    </div>
+
+                    <!-- ЗАГРУЗКА КАРТИНКИ -->
+                    <div class="form-group">
+                        <label>Картинка к вопросу (опционально)</label>
+                        <input type="file" name="question_{{ loop.index0 }}_image" accept="image/*" class="file-input">
+                        {% if question.image_url %}
+                        <div class="image-preview">
+                            <img src="{{ question.image_url }}" alt="Картинка вопроса" style="max-width: 200px; max-height: 150px;">
+                            <p>Текущая картинка</p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label>Тип вопроса</label>
+                        <select name="question_{{ loop.index0 }}_type" onchange="toggleQuestionType(this)">
+                            <option value="choice" {% if question.type == 'choice' %}selected{% endif %}>Выбор ответа (А/A)</option>
+                            <option value="text" {% if question.type == 'text' %}selected{% endif %}>Открытый ответ (В/C)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Часть</label>
+                        <input type="text" name="question_{{ loop.index0 }}_part" value="{{ question.part }}" readonly>
+                    </div>
+
+                    <div class="question-options {% if question.type != 'choice' %}hidden{% endif %}">
+                        <label>Варианты ответов:</label>
+                        {% for option in question.options %}
+                        <div class="option-row">
+                            <input type="text" name="question_{{ loop.index0 }}_option_{{ loop.index0 }}" value="{{ option }}" placeholder="Вариант {{ loop.index }}">
+                            <input type="radio" name="question_{{ loop.index0 }}_correct" value="{{ loop.index0 }}" {% if question.correct_option == loop.index0 %}checked{% endif %}>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="question-text-answer {% if question.type == 'choice' %}hidden{% endif %}">
+                        <div class="form-group">
+                            <label>Правильный ответ (одно слово)</label>
+                            <input type="text" name="question_{{ loop.index0 }}_correct_text" value="{{ question.correct_text or '' }}" placeholder="Например: H2O">
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <button type="button" class="btn btn-secondary" onclick="addQuestion()">➕ Добавить вопрос</button>
+    </div>
+
+    <input type="hidden" name="question_count" id="questionCount" value="{{ test.questions|length if test else 0 }}">
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary btn-large">💾 Сохранить тест</button>
+        <a href="{{ url_for('tests.tests_list', subject_id=subject_id) }}" class="btn btn-secondary">Отмена</a>
+    </div>
+</form>
+
+<script>
+let questionCount = {{ test.questions|length if test else 0 }};
+
+function addQuestion() {
+    const container = document.getElementById('questionsContainer');
+    const index = questionCount;
+    const currentPart = document.getElementById('part').value;
+
+    const questionHtml = `
+        <div class="question-card" data-index="${index}">
+            <div class="question-header">
+                <h4>Вопрос ${index + 1}</h4>
+                <button type="button" class="btn btn-small btn-danger" onclick="removeQuestion(this)">🗑️</button>
+            </div>
+
+            <div class="form-group">
+                <label>Текст вопроса</label>
+                <textarea name="question_${index}_text" rows="3" required placeholder="Введите текст вопроса"></textarea>
+            </div>
+
+            <!-- ЗАГРУЗКА КАРТИНКИ -->
+            <div class="form-group">
+                <label>Картинка к вопросу (опционально)</label>
+                <input type="file" name="question_${index}_image" accept="image/*" class="file-input">
+            </div>
+
+            <div class="form-group">
+                <label>Тип вопроса</label>
+                <select name="question_${index}_type" onchange="toggleQuestionType(this)">
+                    <option value="choice">Выбор ответа (А/A)</option>
+                    <option value="text">Открытый ответ (В/C)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Часть</label>
+                <input type="text" name="question_${index}_part" value="${currentPart}" readonly>
+            </div>
+
+            <div class="question-options">
+                <label>Варианты ответов:</label>
+                <div class="option-row">
+                    <input type="text" name="question_${index}_option_0" placeholder="Вариант 1">
+                    <input type="radio" name="question_${index}_correct" value="0" checked>
+                </div>
+                <div class="option-row">
+                    <input type="text" name="question_${index}_option_1" placeholder="Вариант 2">
+                    <input type="radio" name="question_${index}_correct" value="1">
+                </div>
+                <div class="option-row">
+                    <input type="text" name="question_${index}_option_2" placeholder="Вариант 3">
+                    <input type="radio" name="question_${index}_correct" value="2">
+                </div>
+                <div class="option-row">
+                    <input type="text" name="question_${index}_option_3" placeholder="Вариант 4">
+                    <input type="radio" name="question_${index}_correct" value="3">
+                </div>
+            </div>
+
+            <div class="question-text-answer hidden">
+                <div class="form-group">
+                    <label>Правильный ответ (одно слово)</label>
+                    <input type="text" name="question_${index}_correct_text" placeholder="Например: H2O">
+                </div>
+            </div>
+        </div>
+    `;
+
+    container.insertAdjacentHTML('beforeend', questionHtml);
+    questionCount++;
+    document.getElementById('questionCount').value = questionCount;
+}
+
+function removeQuestion(btn) {
+    btn.closest('.question-card').remove();
+    const cards = document.querySelectorAll('.question-card');
+    cards.forEach((card, i) => {
+        card.querySelector('h4').textContent = `Вопрос ${i + 1}`;
+    });
+    questionCount = cards.length;
+    document.getElementById('questionCount').value = questionCount;
+}
+
+function toggleQuestionType(select) {
+    const card = select.closest('.question-card');
+    const optionsDiv = card.querySelector('.question-options');
+    const textAnswerDiv = card.querySelector('.question-text-answer');
+
+    if (select.value === 'choice') {
+        optionsDiv.classList.remove('hidden');
+        textAnswerDiv.classList.add('hidden');
+    } else {
+        optionsDiv.classList.add('hidden');
+        textAnswerDiv.classList.remove('hidden');
+    }
+}
+</script>
+
+<style>
+.file-input {
+    padding: 10px;
+    border: 2px dashed #9d4edd;
+    border-radius: 8px;
+    background: rgba(157, 78, 221, 0.1);
+    color: #e0aaff;
+    cursor: pointer;
+    width: 100%;
+}
+
+.file-input:hover {
+    background: rgba(157, 78, 221, 0.2);
+}
+
+.image-preview {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid #9d4edd;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.image-preview img {
+    border-radius: 4px;
+    margin-bottom: 5px;
+}
+
+.image-preview p {
+    color: #c77dff;
+    font-size: 12px;
+    margin: 0;
+}
+</style>
+{% endblock %}

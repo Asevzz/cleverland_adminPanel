@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Тесты — {{ subject.name }} — CleverLand Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="header-left">
+        <a href="{{ url_for('dashboard.dashboard') }}" class="back-link">← Назад</a>
+        <h1>📝 {{ subject.name }} — Тесты</h1>
+    </div>
+    <a href="{{ url_for('tests.create_test', subject_id=subject_id) }}" class="btn btn-primary">
+        ➕ Создать тест
+    </a>
+</div>
+
+<div class="tests-list">
+    {% for test in tests %}
+    <div class="test-card {% if not test.is_active %}test-inactive{% endif %}">
+        <div class="test-info">
+            <h3>{{ test.title }}</h3>
+            <div class="test-meta">
+                <span class="test-part">Часть {{ test.part }}</span>
+                <span class="test-questions">{{ test.questions|length }} вопросов</span>
+                <span class="test-status {% if test.is_active %}status-active{% else %}status-inactive{% endif %}">
+                    {% if test.is_active %}Активен{% else %}Неактивен{% endif %}
+                </span>
+            </div>
+        </div>
+
+        <div class="test-actions">
+            <a href="{{ url_for('tests.edit_test', subject_id=subject_id, test_id=test.id) }}" class="btn btn-small btn-secondary">
+                ✏️ Редактировать
+            </a>
+            <form method="POST" action="{{ url_for('tests.delete_test', subject_id=subject_id, test_id=test.id) }}" class="inline-form" onsubmit="return confirm('Удалить тест?')">
+                <button type="submit" class="btn btn-small btn-danger">🗑️ Удалить</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if not tests %}
+<div class="empty-state">
+    <span class="empty-icon">📝</span>
+    <h3>Нет тестов</h3>
+    <p>Создайте первый тест для этого предмета.</p>
+</div>
+{% endif %}
+{% endblock %}

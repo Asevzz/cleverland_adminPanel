@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Результаты — {{ subject.name }} — CleverLand Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="header-left">
+        <a href="{{ url_for('dashboard.dashboard') }}" class="back-link">← Назад</a>
+        <h1>📊 {{ subject.name }} — Результаты учеников</h1>
+    </div>
+</div>
+
+<div class="results-table-container">
+    <table class="results-table">
+        <thead>
+            <tr>
+                <th>№</th>
+                <th>Ученик (ФИО)</th>
+                <th>Правильных</th>
+                <th>Всего</th>
+                <th>Процент</th>
+                <th>Оценка</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td class="student-name">
+                    {% if student.full_name %}
+                        👤 {{ student.full_name }}
+                    {% else %}
+                        ID: {{ student.tg_id }}
+                    {% endif %}
+                </td>
+                <td class="correct-count">{{ student.correct }}</td>
+                <td>{{ student.total }}</td>
+                <td>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {{ (student.correct / student.total * 100) if student.total > 0 else 0 }}%"></div>
+                        <span>{{ "%.1f"|format((student.correct / student.total * 100) if student.total > 0 else 0) }}%</span>
+                    </div>
+                </td>
+                <td>
+                    {% set percent = (student.correct / student.total * 100) if student.total > 0 else 0 %}
+                    {% if percent >= 80 %}
+                        <span class="grade excellent">Отлично</span>
+                    {% elif percent >= 60 %}
+                        <span class="grade good">Хорошо</span>
+                    {% elif percent >= 40 %}
+                        <span class="grade satisfactory">Удовл.</span>
+                    {% else %}
+                        <span class="grade poor">Неуд.</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <button class="btn btn-small btn-secondary" onclick="showDetails({{ student.tg_id }})">Подробнее</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if not students %}
+<div class="empty-state">
+    <span class="empty-icon">📊</span>
+    <h3>Нет результатов</h3>
+    <p>Ученики ещё не проходили тесты по этому предмету.</p>
+</div>
+{% endif %}
+
+<style>
+.student-name {
+    color: #e0aaff;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.correct-count {
+    color: #51cf66;
+    font-weight: 600;
+}
+
+.grade {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.excellent {
+    background: rgba(0, 255, 0, 0.2);
+    color: #51cf66;
+}
+
+.good {
+    background: rgba(100, 255, 100, 0.2);
+    color: #94d82d;
+}
+
+.satisfactory {
+    background: rgba(255, 200, 0, 0.2);
+    color: #fcc419;
+}
+
+.poor {
+    background: rgba(255, 0, 0, 0.2);
+    color: #ff6b6b;
+}
+</style>
+{% endblock %}

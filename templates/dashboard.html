@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Главная — CleverLand Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>📚 Мои предметы</h1>
+    <p class="page-subtitle">Выберите предмет для управления тестами и просмотра результатов</p>
+</div>
+
+<div class="subjects-grid">
+    {% for subject in subjects %}
+    <div class="subject-card">
+        <div class="subject-header">
+            <span class="subject-type">{{ subject.type }}</span>
+            <h3>{{ subject.name }}</h3>
+        </div>
+
+        <div class="subject-parts">
+            <span class="parts-label">Части:</span>
+            <div class="parts-tags">
+                {% for part in subject.parts %}
+                <span class="part-tag">{{ part }}</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="subject-actions">
+            <a href="{{ url_for('tests.tests_list', subject_id=subject.id) }}" class="btn btn-primary">
+                📝 Тесты
+            </a>
+            <a href="{{ url_for('results.results_list', subject_id=subject.id) }}" class="btn btn-secondary">
+                📊 Результаты
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if not subjects %}
+<div class="empty-state">
+    <span class="empty-icon">📭</span>
+    <h3>Нет доступных предметов</h3>
+    <p>Обратитесь к администратору для назначения предметов.</p>
+</div>
+{% endif %}
+{% endblock %}
